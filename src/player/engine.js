@@ -1,4 +1,3 @@
-import chalk from "chalk";
 import { spawn } from "child_process";
 
 import { state } from "./state.js";
@@ -32,11 +31,7 @@ export function play(file) {
 
   paused = false;
 
-  console.log(chalk.green(`[+] Playing ${file}`));
-
   currentPlayer.on("close", () => {
-    console.log(chalk.yellow("[!] Playback ended"));
-
     state.status = "Stopped";
     state.progress = 0;
 
@@ -47,21 +42,23 @@ export function play(file) {
   });
 
   currentPlayer.on("error", (err) => {
-    console.log(chalk.red("[!] Failed to start player"));
-
     console.error(err);
   });
 
   let progress = 0;
 
   const interval = setInterval(() => {
-    if (!currentPlayer || paused) return;
+    if (!currentPlayer) {
+      clearInterval(interval);
+      return;
+    }
+
+    if (paused) return;
 
     progress += 2;
 
     if (progress > 100) {
-      clearInterval(interval);
-      return;
+      progress = 100;
     }
 
     state.progress = progress;
@@ -82,12 +79,6 @@ export function pause() {
     : "Playing";
 
   renderUI();
-
-  console.log(
-    paused
-      ? chalk.yellow("[!] Paused")
-      : chalk.green("[+] Resumed")
-  );
 }
 
 export function stop() {
@@ -99,8 +90,6 @@ export function stop() {
   state.progress = 0;
 
   renderUI();
-
-  console.log(chalk.red("[!] Stopped"));
 
   currentPlayer = null;
   paused = false;
