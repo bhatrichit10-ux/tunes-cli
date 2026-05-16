@@ -1,96 +1,66 @@
-import { spawn } from "child_process";
-
+import MPVPlayer from "node-mpv";
 import { state } from "./state.js";
 import { renderUI } from "../ui/screen.js";
 
-let currentPlayer = null;
-let paused = false;
+let mpv = null;
 
-export function play(file) {
-  if (currentPlayer) {
-    stop();
+export async function play(file) {
+  if (mpv) {
+    await stop();
   }
+
+  mpv = new MPVPlayer({ audio_only: true, auto_restart: false });
+
+  mpv.on("stopped", () => {
+    state.status = "Stopped";
+    state.progress = 0;
+    renderUI();
+    mpv = null;
+  });
+
+  mpv.on("timeposition", (seconds) => {
+    if (state.duration > 0) {
+      state.progress = Math.min(100, (seconds / state.duration) * 100);
+      renderUI();
+    }
+  });
+
+  mpv.on("statuschange", (status) => {
+    if (status.duration) {
+      state.duration = status.duration;
+    }
+  });
+
+  await mpv.load(file);
 
   state.currentSong = file;
   state.status = "Playing";
   state.progress = 0;
 
   renderUI();
-
-  currentPlayer = spawn(
-    "C:/mpv/mpv.exe",
-    [
-      "--no-video",
-      "--quiet",
-      file
-    ],
-    {
-      stdio: ["pipe", "ignore", "ignore"]
-    }
-  );
-
-  paused = false;
-
-  currentPlayer.on("close", () => {
-    state.status = "Stopped";
-    state.progress = 0;
-
-    renderUI();
-
-    currentPlayer = null;
-    paused = false;
-  });
-
-  currentPlayer.on("error", (err) => {
-    console.error(err);
-  });
-
-  let progress = 0;
-
-  const interval = setInterval(() => {
-    if (!currentPlayer) {
-      clearInterval(interval);
-      return;
-    }
-
-    if (paused) return;
-
-    progress += 2;
-
-    if (progress > 100) {
-      progress = 100;
-    }
-
-    state.progress = progress;
-
-    renderUI();
-  }, 1000);
 }
 
-export function pause() {
-  if (!currentPlayer) return;
+export async function pause() {
+  if (!mpv) return;
 
-  currentPlayer.stdin.write(" ");
+  await mpv.togglePause();
 
-  paused = !paused;
-
-  state.status = paused
-    ? "Paused"
-    : "Playing";
+  const paused = await mpv.getProperty("pause");
+  state.status = paused ? "Paused" : "Playing";
 
   renderUI();
 }
 
-export function stop() {
-  if (!currentPlayer) return;
+export async function stop() {
+  if (!mpv) return;
 
-  currentPlayer.kill();
+  await mpv.stop();
+  await mpv.quit();
 
   state.status = "Stopped";
   state.progress = 0;
 
   renderUI();
 
-  currentPlayer = null;
-  paused = false;
+  mpv = null;
 }

@@ -55,7 +55,7 @@ program
 .command("play <file>")
     .description("Play a music file")
     .action(async (file) => {
-    play(file);
+   await play(file);
     } );
 
 program.parse(process.argv);
@@ -64,12 +64,12 @@ process.stdin.setRawMode(true);
 process.stdin.resume(); 
 process.stdin.setEncoding("utf8");
 
-process.stdin.on('data', (key) => {
+process.stdin.on('data', async (key) => {
   if (key === '\u001bq') { // Alt Q
     process.exit(0);
   } else if (key === '\u001bp') { // Alt P
-    pause();
+    await pause();
   } else if (key === '\u001bs') { // Alt S
-    stop();
+    await stop();
   }
 })

@@ -1,6 +1,6 @@
 export const state = {
     currentSong: null,
     status: "Stopped",
-    progess: 0,
+    progress: 0,
     queue: []
 }
