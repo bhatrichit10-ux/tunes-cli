@@ -2,14 +2,9 @@ import MPVPlayer from "node-mpv";
 import { state } from "./state.js";
 import { renderUI } from "../ui/screen.js";
 
-let mpv = null;
 
+let mpv = new MPVPlayer({ audio_only: true, auto_restart: false });
 export async function play(file) {
-  if (mpv) {
-    await stop();
-  }
-
-  mpv = new MPVPlayer({ audio_only: true, auto_restart: false });
 
   mpv.on("stopped", () => {
     state.status = "Stopped";
@@ -19,6 +14,7 @@ export async function play(file) {
   });
 
   mpv.on("timeposition", (seconds) => {
+    state.currentTime = seconds;
     if (state.duration > 0) {
       state.progress = Math.min(100, (seconds / state.duration) * 100);
       renderUI();

@@ -1,6 +1,11 @@
 import blessed from "blessed";
 import { state } from "../player/state.js";
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
 
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
 const screen = blessed.screen({
   smartCSR: true,
   title: "Tunes CLI"
@@ -10,7 +15,7 @@ const header = blessed.box({
   top: 0,
   width: "100%",
   height: 3,
-  content: " 🎵 Tunes CLI ",
+  content: " > Tunes CLI ",
   border: {
     type: "line"
   },
@@ -81,6 +86,7 @@ export function renderUI() {
 `Now Playing
 
 Song: ${state.currentSong || "None"}
+Duration: ${formatTime(state.currentTime)}/${formatTime(state.duration)}
 Status: ${state.status}
 
 ${generateProgressBar(state.progress)}`
